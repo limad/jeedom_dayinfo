@@ -4,4 +4,17 @@ Le plugin ne comporte pas de configuration générale.
 
 Sur l'équipement il faut configurer le type et la localisation si elle est nécessaire. La localisation requiert l'installation et la configuration du plug-in "Localisation et trajet". Elle permet par exemple de calculer les zones de vacances scolaires à partir du département indiqué.
 
-Pour le calendrier personnalisé, un champ permet de remplir le chemin, ce fichier doit être local au format ics, le calendrier doit contenir des evenements de type "jours entiers" avec un début et une fin. Par exemple un calendrier de congés, vacances scolaires non pris en charge en standard, jours fériés etc
+Sans le plugin Geotrav, choisir "Configuration Jeedom" dans "Localisation à utiliser" : le plugin utilise alors le code postal et le pays renseignés dans Réglages > Système > Configuration > Général > Coordonnées (le pays doit être France, Belgique, Suisse ou Canada ; les vacances scolaires sont disponibles pour la France, la Belgique et la Suisse).
+
+Le type "Global" regroupe en un seul équipement les commandes des types Jours fériés, Vacances scolaires, Lune et Divers.
+
+Le bouton "Créer par type" de la page du plugin crée en une fois un équipement pour chaque type manquant (le calendrier iCal doit ensuite être renseigné). Les équipements existants ne sont pas modifiés.
+
+Pour le calendrier personnalisé, un champ permet de remplir le chemin, ce fichier doit être local au format ics, le calendrier doit contenir des événements avec un début et une fin, en "jours entiers" ou avec une heure (un événement horaire est "en cours" entre son heure de début et son heure de fin). Par exemple un calendrier de congés, vacances scolaires non pris en charge en standard, jours fériés etc
+
+==== Limites connues
+
+* Les vacances scolaires des DOM-TOM ne sont pas prises en charge.
+* Le calendrier des vacances suisses est celui du canton de Genève (jusqu'en août 2028), le belge s'arrête à la fin de l'année scolaire 2027-2028 (vacances d'été 2028 non renseignées) et le français en juillet 2028 (fichiers du dossier resources).
+* Un événement iCal sans date de fin (DTEND) est ignoré. Un calendrier iCal distant (URL) n'est relu qu'une fois toutes les 10 minutes.
+* Les valeurs sont recalculées une fois par jour à minuit (et au démarrage de Jeedom), ou à la demande avec la commande Rafraichir ; le type "Calendrier iCal" est recalculé chaque minute.

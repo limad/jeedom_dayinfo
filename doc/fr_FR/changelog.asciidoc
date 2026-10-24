@@ -1,3 +1,23 @@
+==== Version octobre 2026
+
+Compatibilité PHP 8.4 et interface sans jQuery
+
+Ajout du bouton "Créer par type" et de la localisation "Configuration Jeedom" (code postal + pays) sans dépendre de Geotrav
+
+Commandes complètes du type "Global"
+
+La lecture d'un calendrier iCal illisible n'écrase plus les valeurs et est journalisée
+
+Calendrier iCal : prise en compte des événements horaires (en cours à l'instant), recalcul chaque minute, lecture d'URL mise en cache 10 minutes
+
+Saisons : équinoxes et solstices 2024-2040 tabulés (correction d'un jour en septembre 2026)
+
+Avertissement dans le log si des commandes d'un ancien type subsistent après un changement de type
+
+Calendriers de vacances : France jusqu'en 2028, Belgique 2027-2028, Suisse (canton de Genève) jusqu'en 2028
+
+Corrections : vacances de la Corse (zone B), jours fériés des DOM (département sur 3 chiffres), Territoire de Belfort retiré des jours fériés d'Alsace-Moselle
+
 ==== Version octobre 2017
 
 Refonte complète avec passage sur différents types d'équipements
