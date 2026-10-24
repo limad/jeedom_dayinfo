@@ -31,6 +31,11 @@ $eqLogics = eqLogic::byType('dayinfo');
         <br />
         <span>{{Ajouter}}</span>
       </div>
+      <div class="cursor logoSecondary" id="bt_createByType">
+        <i class="fas fa-layer-group"></i>
+        <br />
+        <span>{{Créer par type}}</span>
+      </div>
       <div class="cursor eqLogicAction logoSecondary" data-action="gotoPluginConf">
         <i class="fas fa-wrench"></i>
         <br />
@@ -152,7 +157,7 @@ $eqLogics = eqLogic::byType('dayinfo');
                       }
                     }
                   }
-                  if ((config::byKey('info::latitude') != '') && (config::byKey('info::longitude') != '') && (config::byKey('info::postalCode') != '') && (config::byKey('info::stateCode') != '')) {
+                  if ((config::byKey('info::postalCode') != '') && (config::byKey('info::stateCode') != '')) {
                     echo '<option value="jeedom">Configuration Jeedom</option>';
                     $none = 1;
                   }
@@ -161,6 +166,15 @@ $eqLogics = eqLogic::byType('dayinfo');
                   }
                   ?>
                 </select>
+                <?php
+                if ($none == 0) {
+                  echo '<div class="alert alert-warning" style="margin-top:8px;">';
+                  echo '<i class="fas fa-exclamation-triangle"></i> {{Aucune localisation disponible : les jours fériés et les vacances scolaires ne peuvent pas être calculés. Renseignez le code postal (CP) et le pays dans}} ';
+                  echo '<a href="index.php?v=d&p=administration" target="_blank">{{Réglages > Système > Configuration > Général > Coordonnées}}</a>, ';
+                  echo '{{ou installez le plugin Geotrav, puis rechargez cette page.}}';
+                  echo '</div>';
+                }
+                ?>
               </div>
             </div>
 

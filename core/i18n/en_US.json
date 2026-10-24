@@ -28,12 +28,20 @@
         "Sauvegarder": "Save",
         "Configuration avancée": "Advanced setup",
         "Equipement": "Equipment",
-        "Commandes": "Commands"
+        "Commandes": "Commands",
+        "Créer par type": "Create by type",
+        "Aucune localisation disponible : les jours fériés et les vacances scolaires ne peuvent pas être calculés. Renseignez le code postal (CP) et le pays dans": "No location available: public holidays and school holidays cannot be computed. Fill in the postal code (ZIP) and the country in",
+        "Réglages > Système > Configuration > Général > Coordonnées": "Settings > System > Configuration > General > Contact details",
+        "ou installez le plugin Geotrav, puis rechargez cette page.": "or install the Geotrav plugin, then reload this page."
     },
     "plugins/dayinfo/desktop/js/dayinfo.js": {
         "Nom de l\\'info": "Info Name",
         "Historiser": "Logging",
-        "Afficher": "Show"
+        "Afficher": "Show",
+        "Créer un équipement par type ?": "Create one equipment per type?",
+        "Un équipement sera créé pour chaque type manquant : Jours fériés, Vacances scolaires, Lune, Divers, Global et Calendrier iCal (emplacement du calendrier à renseigner ensuite). Les types déjà existants sont conservés.": "One equipment will be created for each missing type: Public holidays, School holidays, Moon, Various, Global and iCal calendar (calendar location to be filled in afterwards). Existing types are kept.",
+        "Équipements créés": "Equipment created",
+        "Aucun équipement à créer : tous les types existent déjà.": "Nothing to create: every type already exists."
     },
     "plugins/dayinfo/core/class/dayinfo.class.php": {
         "Vacances": "Holiday",
