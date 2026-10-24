@@ -6,14 +6,14 @@
             "type": "info",
             "subtype": "binary",
             "display": {
-				"generic_type": "DONT"
+                "generic_type": "DONT"
             },
             "template": {
-					"dashboard": "line",
-					"mobile": "line"
+                "dashboard": "line",
+                "mobile": "line"
             },
             "configuration": {
-				"type": "holidays"
+                "type": "holidays"
             },
             "logicalId": "holidays:day"
         },
@@ -22,14 +22,14 @@
             "type": "info",
             "subtype": "string",
             "display": {
-				"generic_type": "DONT"
+                "generic_type": "DONT"
             },
             "template": {
-					"dashboard": "line",
-					"mobile": "line"
+                "dashboard": "line",
+                "mobile": "line"
             },
             "configuration": {
-				"type": "holidays"
+                "type": "holidays"
             },
             "logicalId": "holidays:daylabel"
         },
@@ -38,14 +38,14 @@
             "type": "info",
             "subtype": "string",
             "display": {
-				"generic_type": "DONT"
+                "generic_type": "DONT"
             },
             "template": {
-					"dashboard": "line",
-					"mobile": "line"
+                "dashboard": "line",
+                "mobile": "line"
             },
             "configuration": {
-				"type": "holidays"
+                "type": "holidays"
             },
             "logicalId": "holidays:nextlabel"
         },
@@ -54,14 +54,14 @@
             "type": "info",
             "subtype": "numeric",
             "display": {
-				"generic_type": "DONT"
+                "generic_type": "DONT"
             },
             "template": {
-					"dashboard": "line",
-					"mobile": "line"
+                "dashboard": "line",
+                "mobile": "line"
             },
             "configuration": {
-				"type": "holidays"
+                "type": "holidays"
             },
             "logicalId": "holidays:nextend"
         },
@@ -70,14 +70,14 @@
             "type": "info",
             "subtype": "numeric",
             "display": {
-				"generic_type": "DONT"
+                "generic_type": "DONT"
             },
             "template": {
-					"dashboard": "line",
-					"mobile": "line"
+                "dashboard": "line",
+                "mobile": "line"
             },
             "configuration": {
-				"type": "holidays"
+                "type": "holidays"
             },
             "logicalId": "holidays:nextbegin"
         },
@@ -86,14 +86,14 @@
             "type": "info",
             "subtype": "numeric",
             "display": {
-				"generic_type": "DONT"
+                "generic_type": "DONT"
             },
             "template": {
-					"dashboard": "line",
-					"mobile": "line"
+                "dashboard": "line",
+                "mobile": "line"
             },
             "configuration": {
-				"type": "bankdays"
+                "type": "bankdays"
             },
             "logicalId": "bankdays:nextdays"
         },
@@ -102,14 +102,14 @@
             "type": "info",
             "subtype": "binary",
             "display": {
-				"generic_type": "DONT"
+                "generic_type": "DONT"
             },
             "configuration": {
-				"type": "bankdays"
+                "type": "bankdays"
             },
             "template": {
-					"dashboard": "line",
-					"mobile": "line"
+                "dashboard": "line",
+                "mobile": "line"
             },
             "logicalId": "bankdays:bankday"
         },
@@ -118,14 +118,14 @@
             "type": "info",
             "subtype": "numeric",
             "display": {
-				"generic_type": "DONT"
+                "generic_type": "DONT"
             },
             "template": {
-					"dashboard": "line",
-					"mobile": "line"
+                "dashboard": "line",
+                "mobile": "line"
             },
             "configuration": {
-				"type": "moon"
+                "type": "moon"
             },
             "logicalId": "moon:phase"
         },
@@ -134,14 +134,14 @@
             "type": "info",
             "subtype": "numeric",
             "display": {
-				"generic_type": "DONT"
+                "generic_type": "DONT"
             },
             "template": {
-					"dashboard": "line",
-					"mobile": "line"
+                "dashboard": "line",
+                "mobile": "line"
             },
             "configuration": {
-				"type": "moon"
+                "type": "moon"
             },
             "logicalId": "moon:age"
         },
@@ -150,14 +150,14 @@
             "type": "info",
             "subtype": "numeric",
             "display": {
-				"generic_type": "DONT"
+                "generic_type": "DONT"
             },
             "template": {
-					"dashboard": "line",
-					"mobile": "line"
+                "dashboard": "line",
+                "mobile": "line"
             },
             "configuration": {
-				"type": "moon"
+                "type": "moon"
             },
             "logicalId": "moon:illumination"
         },
@@ -166,14 +166,14 @@
             "type": "info",
             "subtype": "numeric",
             "display": {
-				"generic_type": "DONT"
+                "generic_type": "DONT"
             },
             "template": {
-					"dashboard": "line",
-					"mobile": "line"
+                "dashboard": "line",
+                "mobile": "line"
             },
             "configuration": {
-				"type": "moon"
+                "type": "moon"
             },
             "logicalId": "moon:distance"
         },
@@ -182,14 +182,14 @@
             "type": "info",
             "subtype": "string",
             "display": {
-				"generic_type": "DONT"
+                "generic_type": "DONT"
             },
             "template": {
-					"dashboard": "line",
-					"mobile": "line"
+                "dashboard": "line",
+                "mobile": "line"
             },
             "configuration": {
-				"type": "moon"
+                "type": "moon"
             },
             "logicalId": "moon:name"
         },
@@ -198,14 +198,14 @@
             "type": "info",
             "subtype": "string",
             "display": {
-				"generic_type": "DONT"
+                "generic_type": "DONT"
             },
             "template": {
-					"dashboard": "line",
-					"mobile": "line"
+                "dashboard": "line",
+                "mobile": "line"
             },
             "configuration": {
-				"type": "various"
+                "type": "various"
             },
             "logicalId": "various:season"
         },
@@ -214,14 +214,14 @@
             "type": "info",
             "subtype": "numeric",
             "display": {
-				"generic_type": "DONT"
+                "generic_type": "DONT"
             },
             "template": {
-					"dashboard": "line",
-					"mobile": "line"
+                "dashboard": "line",
+                "mobile": "line"
             },
             "configuration": {
-				"type": "various"
+                "type": "various"
             },
             "logicalId": "various:nextseason"
         },
@@ -230,14 +230,14 @@
             "type": "info",
             "subtype": "binary",
             "display": {
-				"generic_type": "DONT"
+                "generic_type": "DONT"
             },
             "template": {
-					"dashboard": "line",
-					"mobile": "line"
+                "dashboard": "line",
+                "mobile": "line"
             },
             "configuration": {
-				"type": "various"
+                "type": "various"
             },
             "logicalId": "various:weekend"
         },
@@ -246,14 +246,14 @@
             "type": "info",
             "subtype": "numeric",
             "display": {
-        "generic_type": "DONT"
+                "generic_type": "DONT"
             },
             "template": {
-          "dashboard": "line",
-          "mobile": "line"
+                "dashboard": "line",
+                "mobile": "line"
             },
             "configuration": {
-        "type": "various"
+                "type": "various"
             },
             "logicalId": "various:daynumber"
         },
@@ -262,13 +262,45 @@
             "type": "action",
             "subtype": "other",
             "display": {
-      "icon": "<i class=\"fas fa-refresh\"><\/i>"
+                "icon": "<i class=\"fas fa-refresh\"></i>"
             },
-            "configuration" : {
-          "request" : "refresh"
-        },
+            "configuration": {
+                "request": "refresh"
+            },
             "isVisible": 1,
             "logicalId": "refresh"
+        },
+        {
+            "name": "Occurence de ce jour de semaine dans le mois",
+            "type": "info",
+            "subtype": "numeric",
+            "display": {
+                "generic_type": "DONT"
+            },
+            "template": {
+                "dashboard": "line",
+                "mobile": "line"
+            },
+            "configuration": {
+                "type": "global"
+            },
+            "logicalId": "various:occurence"
+        },
+        {
+            "name": "Dernière occurence de ce jour de semaine dans le mois",
+            "type": "info",
+            "subtype": "binary",
+            "display": {
+                "generic_type": "DONT"
+            },
+            "template": {
+                "dashboard": "line",
+                "mobile": "line"
+            },
+            "configuration": {
+                "type": "global"
+            },
+            "logicalId": "various:lastOccurence"
         }
     ]
 }

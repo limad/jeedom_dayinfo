@@ -26,14 +26,32 @@ class dayinfo extends eqLogic {
 
 
     public static function cronDaily() {
-        foreach (eqLogic::byType('dayinfo', true) as $dayinfo) {
-            $dayinfo->getInformations();
-        }
+        self::refreshAll();
     }
 
     public static function start() {
+        self::refreshAll();
+    }
+
+    // Les événements horaires du calendrier iCal se recalculent chaque minute (les autres types restent quotidiens).
+    public static function cron() {
+        self::refreshAll('calendar');
+    }
+
+    // Un équipement en erreur (ex. localisation Geotrav supprimée) ne doit pas bloquer les suivants.
+    private static function refreshAll($_type = null) {
         foreach (eqLogic::byType('dayinfo', true) as $dayinfo) {
-            $dayinfo->getInformations();
+            if ($_type !== null && $dayinfo->getConfiguration('type') != $_type) {
+                continue;
+            }
+            if ($_type == 'calendar' && $dayinfo->getConfiguration('calendar') == '') {
+                continue; // pas d'avertissement chaque minute : il est émis par le calcul quotidien
+            }
+            try {
+                $dayinfo->getInformations();
+            } catch (Throwable $e) {
+                log::add('dayinfo', 'error', $dayinfo->getName() . ' : ' . $e->getMessage());
+            }
         }
     }
 
@@ -73,13 +91,106 @@ class dayinfo extends eqLogic {
 
     }
 
+    public static function getTypeLabels() {
+        return array(
+            'bankdays' => 'Jours fériés',
+            'holidays' => 'Vacances scolaires',
+            'moon' => 'Lune',
+            'various' => 'Divers',
+            'global' => 'Global',
+            'calendar' => 'Calendrier iCal',
+        );
+    }
+
+    public static function getDefaultGeoloc() {
+        if (class_exists('geotravCmd')) {
+            foreach (eqLogic::byType('geotrav') as $geoloc) {
+                if ($geoloc->getConfiguration('type') == 'location') {
+                    return $geoloc->getId();
+                }
+            }
+        }
+        if (config::byKey('info::postalCode') != '' && config::byKey('info::stateCode') != '') {
+            return 'jeedom';
+        }
+        return '';
+    }
+
+    /*
+    * Crée un équipement par type d'informations ($_types, ou tous les types simples)
+    * s'il n'en existe pas déjà un. Retourne la liste des noms créés.
+    */
+    public static function createByType($_types = array()) {
+        $labels = self::getTypeLabels();
+        if (!is_array($_types) || count($_types) == 0) {
+            $_types = array_keys($labels);
+        }
+        $existing = array();
+        foreach (eqLogic::byType('dayinfo') as $eqLogic) {
+            $existing[$eqLogic->getConfiguration('type')] = true;
+        }
+        $geoloc = self::getDefaultGeoloc();
+        $created = array();
+        foreach ($_types as $type) {
+            if (!isset($labels[$type]) || isset($existing[$type])) {
+                continue;
+            }
+            $eqLogic = new dayinfo();
+            $eqLogic->setName('Infos du jour - ' . $labels[$type]);
+            $eqLogic->setEqType_name('dayinfo');
+            $eqLogic->setIsEnable(1);
+            $eqLogic->setIsVisible(1);
+            $eqLogic->setConfiguration('type', $type);
+            if ($type == 'bankdays' || $type == 'holidays' || $type == 'global') {
+                $eqLogic->setConfiguration('geoloc', $geoloc);
+            }
+            $eqLogic->save();
+            $eqLogic->loadCmdFromConf($type);
+            try {
+                $eqLogic->getInformations();
+            } catch (Throwable $e) {
+                log::add('dayinfo', 'error', 'Calcul initial "' . $labels[$type] . '" : ' . $e->getMessage());
+            }
+            $created[] = $eqLogic->getName();
+        }
+        return $created;
+    }
+
     public function postAjax() {
         $this->loadCmdFromConf($this->getConfiguration('type'));
+        $this->warnOrphanCmds();
         $this->getInformations();
     }
 
+    // Après un changement de type, les anciennes commandes restent et ne sont plus mises à jour : on les signale (sans rien supprimer).
+    public function warnOrphanCmds() {
+        $file = dirname(__FILE__) . '/../config/devices/' . basename((string) $this->getConfiguration('type')) . '.json';
+        $conf = is_file($file) ? json_decode(file_get_contents($file), true) : null;
+        if (!is_array($conf) || !isset($conf['commands'])) {
+            return;
+        }
+        $expected = array();
+        foreach ($conf['commands'] as $command) {
+            $expected[] = $command['logicalId'] ?? '';
+        }
+        $orphans = array();
+        foreach ($this->getCmd() as $cmd) {
+            if (!in_array($cmd->getLogicalId(), $expected)) {
+                $orphans[] = $cmd->getName();
+            }
+        }
+        if (count($orphans) > 0) {
+            log::add('dayinfo', 'warning', $this->getName() . ' : commandes qui n\'appartiennent plus au type "' . $this->getConfiguration('type') . '" et ne sont plus mises à jour (à supprimer si inutiles) : ' . implode(', ', $orphans));
+        }
+    }
+
     public function loadCmdFromConf($type) {
-        $content = file_get_contents(dirname(__FILE__) . '/../config/devices/' . $type . '.json');
+        $file = dirname(__FILE__) . '/../config/devices/' . basename((string) $type) . '.json';
+        if (!is_file($file)) {
+            log::add('dayinfo', 'warning', $this->getName() . ' : définition des commandes introuvable pour le type "' . $type . '"');
+            return true;
+        }
+        $content = file_get_contents($file);
         $return = json_decode($content, true);
         if (!is_array($return) || !isset($return['commands'])) {
             return true;
@@ -87,10 +198,39 @@ class dayinfo extends eqLogic {
         $this->import($return);
     }
 
+    // Vérifie qu'une localisation exploitable est choisie (Jeedom ou Geotrav) ; avertit sinon.
+    public function hasLocation() {
+        $geoloc = $this->getConfiguration('geoloc');
+        if ($geoloc == 'jeedom') {
+            return true;
+        }
+        if ($geoloc == '' || !class_exists('geotravCmd')) {
+            log::add('dayinfo', 'warning', $this->getName() . ' : aucune localisation sélectionnée (choisir "Configuration Jeedom" dans la fiche de l\'équipement)');
+            return false;
+        }
+        return true;
+    }
+
+    // Département depuis le code postal : 3 chiffres pour les DOM (97x), 2A/2B pour la Corse (20xxx), sinon 2 chiffres.
+    public static function getDepartment($_postal) {
+        $postal = (string) $_postal;
+        $prefix = substr($postal, 0, 2);
+        if ($prefix == '97' || $prefix == '98') {
+            return substr($postal, 0, 3);
+        }
+        if ($prefix == '20') {
+            return ((int) substr($postal, 0, 3) <= 201) ? '2A' : '2B';
+        }
+        return $prefix;
+    }
+
     public function isNotWorkable(){
+        if (!$this->hasLocation()) {
+            return;
+        }
         if ($this->getConfiguration('geoloc') == "jeedom") {
             $postal = config::byKey('info::postalCode');
-            $region = $postal[0] . $postal[1];
+            $region = self::getDepartment($postal);
             $stateCode = strtolower(config::byKey('info::stateCode'));
             if ($stateCode == 'fr') {
                 $country = "france";
@@ -107,6 +247,14 @@ class dayinfo extends eqLogic {
             $region = geotravCmd::byEqLogicIdAndLogicalId($this->getConfiguration('geoloc'),'location:department')->execCmd();
             $country = strtolower(geotravCmd::byEqLogicIdAndLogicalId($this->getConfiguration('geoloc'),'location:country')->execCmd());
           }
+        if ($country == '') {
+            log::add('dayinfo', 'warning', 'Pays non défini (Configuration Jeedom > Informations > Pays) : jours fériés non calculés');
+            return;
+        }
+        if (!in_array($country, array('france', 'belgique', 'suisse', 'canada'))) {
+            log::add('dayinfo', 'warning', 'Aucun jour férié connu pour le pays "' . $country . '" : jour férié non calculé');
+            return;
+        }
         $timestamp = strtotime("today");
         $year = date("Y", $timestamp);
         $holidays = dayinfo::getHolidays($country,$region,$year);
@@ -145,7 +293,7 @@ class dayinfo extends eqLogic {
             $holidays[] = mktime(0, 0, 0, $easterMonth, $easterDay + 39, $easterYear); // Ascension
             $holidays[] = mktime(0, 0, 0, $easterMonth, $easterDay + 50, $easterYear); // Lundi Pentecote
 
-            if ($region == "57" || $region == "67" || $region == "68" || $region == "90") {
+            if ($region == "57" || $region == "67" || $region == "68") {
                 $holidays[] = mktime(0, 0, 0, $easterMonth, $easterDay - 2,  $easterYear); // Vendredi Saint
                 $holidays[] = mktime(0, 0, 0, 12, 26, $year);  // Saint Etienne
             } else if ($region == "972") {
@@ -234,9 +382,12 @@ class dayinfo extends eqLogic {
     }
 
     public function getDifftoNextHoliday($format="%a")		{
+        if (!$this->hasLocation()) {
+            return;
+        }
         if ($this->getConfiguration('geoloc') == "jeedom") {
             $postal = config::byKey('info::postalCode');
-            $region = $postal[0] . $postal[1];
+            $region = self::getDepartment($postal);
             $stateCode = strtolower(config::byKey('info::stateCode'));
             if ($stateCode == 'fr') {
                 $country = "france";
@@ -253,7 +404,11 @@ class dayinfo extends eqLogic {
             $region = geotravCmd::byEqLogicIdAndLogicalId($this->getConfiguration('geoloc'),'location:department')->execCmd();
             $country = strtolower(geotravCmd::byEqLogicIdAndLogicalId($this->getConfiguration('geoloc'),'location:country')->execCmd());
           }
-        $next_holiday = dayinfo::getNextHoliday($country,$region);
+        $next_holiday = ($country == '') ? null : dayinfo::getNextHoliday($country,$region);
+        if ($next_holiday === null) {
+            log::add('dayinfo', 'warning', 'Aucun jour férié connu pour le pays "' . $country . '" : prochain jour férié non calculé');
+            return;
+        }
         $date_next_holiday = new DateTime(date('Y-m-d', $next_holiday));
         $current_date = new DateTime('today');
         $interval = $current_date->diff($date_next_holiday);
@@ -325,6 +480,9 @@ class dayinfo extends eqLogic {
 
     // Vacances scolaires
     public function whatHolidays() {
+        if (!$this->hasLocation()) {
+            return;
+        }
         if ($this->getConfiguration('geoloc') == "jeedom") {
             $stateCode = strtolower(config::byKey('info::stateCode'));
             if ($stateCode == 'fr') {
@@ -348,28 +506,41 @@ class dayinfo extends eqLogic {
         if ($country == 'france') {
             if ($this->getConfiguration('geoloc') == "jeedom") {
             $postal = config::byKey('info::postalCode');
-            $departement = $postal[0] . $postal[1];
+            $departement = self::getDepartment($postal);
           } else {
             $departement = geotravCmd::byEqLogicIdAndLogicalId($this->getConfiguration('geoloc'),'location:department')->execCmd();
           }
-            if (strpos($departement,'97') == true) {
+            if (strpos((string) $departement, '97') === 0) {
                 log::add('dayinfo', 'error', 'Calendrier des DOM TOM non pris en charge');
                 return;
             }
             $devAddr = dirname(__FILE__) . '/../../resources/academies.csv';
-            $devResult = fopen($devAddr, "r");
-            while ( ($data = fgetcsv($devResult,1000,",") ) !== FALSE ) {
-                $num = count($data);
-                if ($data[3] == $departement) {
-                    $explode = explode(' ',$data[2]);
-                    $calendarid = $country . $explode[1];
+            $devResult = is_file($devAddr) ? fopen($devAddr, "r") : false;
+            if ($devResult === false) {
+                log::add('dayinfo', 'error', 'Fichier des académies illisible : ' . $devAddr);
+                return;
+            }
+            while ( ($data = fgetcsv($devResult,1000,",","\"","\\") ) !== FALSE ) {
+                if (isset($data[3]) && $data[3] == $departement) {
+                    $explode = explode(' ',(string) ($data[2] ?? ''));
+                    if (isset($explode[1])) {
+                        $calendarid = $country . $explode[1];
+                    }
                 }
             }
             fclose($devResult);
         } else {
             $calendarid = $country;
         }
+        if (empty($calendarid)) {
+            log::add('dayinfo', 'warning', 'Calendrier de vacances introuvable (pays "' . $country . '", département "' . ($departement ?? '') . '") : vérifier Configuration Jeedom > Informations');
+            return;
+        }
         $icaddr = dirname(__FILE__) . '/../../resources/' . $calendarid . '.ics';
+        if (!is_file($icaddr)) {
+            log::add('dayinfo', 'warning', 'Pas de calendrier de vacances pour "' . $calendarid . '"');
+            return;
+        }
         $ical   = new ICal($icaddr);
         log::add('dayinfo', 'debug', 'Ical ' . $icaddr);
 
@@ -379,7 +550,7 @@ class dayinfo extends eqLogic {
         $datetoday = date_create("today");
         $diffday = 365;
         $diffend = 365;
-        $finete = date_create(mktime(0, 0, 0, 1,  1));
+        $finete = date_create(date('Y') . '-01-01');
         $debutete = $finete;
 
         foreach ($events as $event) {
@@ -407,7 +578,7 @@ class dayinfo extends eqLogic {
                     $nholiday = $event['SUMMARY'];
                 }
             } else {
-                if (strpos($event['DESCRIPTION'],'été') !== false) {
+                if (strpos($event['DESCRIPTION'] ?? '','été') !== false) {
                     //post debut vacances d'été (label vacances, date supérieure et on est bien sur l'année en cours)
                     $datehol = date_create($event['DTSTART']);
                     if (date_format($datetoday,'Y') === date_format($datehol,'Y') ) {
@@ -415,7 +586,7 @@ class dayinfo extends eqLogic {
                         //log::add('dayinfo', 'debug', 'Debut ' . $debutete);
                     }
                 }
-                if ($event['DESCRIPTION'] == "Rentrée scolaire des élèves") {
+                if (($event['DESCRIPTION'] ?? '') == "Rentrée scolaire des élèves") {
                     //post reprise (label rentrée, date supérieure)
                     $datehol = date_create($event['DTSTART']);
                     //log::add('dayinfo', 'debug', 'Fin ' . date_format($datetoday,'Y') . ' ' . date_format($datehol,'Y'));
@@ -458,25 +629,96 @@ class dayinfo extends eqLogic {
         $this->checkAndUpdateCmd('holidays:nextlabel', $nextlabel);
     }
 
+    // Erreur récurrente (cron chaque minute) : journalisée au plus une fois par heure et par message.
+    private function logThrottled($_level, $_message) {
+        $key = 'dayinfo::log::' . md5($_message);
+        if (cache::byKey($key)->getValue(0) == 1) {
+            return;
+        }
+        cache::set($key, 1, 3600);
+        log::add('dayinfo', $_level, $_message);
+    }
+
+    // Lit un fichier ICS local ou une URL http(s) (timeout 10 s) ; retourne les lignes, ou null si illisible/vide.
+    private static function readIcs($_source) {
+        if (preg_match('#^https?://#i', $_source)) {
+            // Rafraîchie chaque minute : l'URL n'est interrogée qu'une fois toutes les 10 minutes
+            $cacheKey = 'dayinfo::ics::' . md5($_source);
+            $cached = cache::byKey($cacheKey)->getValue('');
+            if ($cached !== '') {
+                return explode("\n", $cached);
+            }
+            $context = stream_context_create(array('http' => array('timeout' => 10)));
+            $content = @file_get_contents($_source, false, $context);
+            if ($content !== false && trim($content) !== '') {
+                cache::set($cacheKey, $content, 600);
+            }
+        } else {
+            $content = is_file($_source) ? @file_get_contents($_source) : false;
+        }
+        if ($content === false || trim($content) === '') {
+            return null;
+        }
+        return explode("\n", $content);
+    }
+
     public function calendarEvent() {
         $eventn = '0';
         $label = '-';
         $nextlabel = '-';
 
         $icaddr = $this->getConfiguration('calendar');
-        $ical   = new ICal($icaddr);
-        log::add('dayinfo', 'debug', 'Ical ' . $icaddr);
+        if ($icaddr == '') {
+            log::add('dayinfo', 'warning', $this->getName() . ' : emplacement du calendrier ICS non renseigné');
+            return;
+        }
+        $lines = self::readIcs($icaddr);
+        if ($lines === null) {
+            $this->logThrottled('error', $this->getName() . ' : calendrier ICS illisible ou vide (' . $icaddr . ') : valeurs non mises à jour');
+            return;
+        }
+        $ical   = new ICal($lines);
 
         $events = $ical->events();
-        //$timestamp = strtotime("12/30/2015");
-        $timestamp = strtotime("today");
+        if (!is_array($events)) {
+            $this->logThrottled('error', $this->getName() . ' : aucun événement exploitable dans le calendrier ICS (' . $icaddr . ') : valeurs non mises à jour');
+            return;
+        }
         $datetoday = date_create("today");
+        $now = date_create('now');
         $diffday = 365;
         $diffend = 365;
 
         foreach ($events as $event) {
             if (isset($event['DTEND'])) {
                 $datehol = date_create($event['DTSTART']);
+                $datefin = date_create($event['DTEND']);
+                if ($datehol === false || $datefin === false) {
+                    continue;
+                }
+                if (strlen((string) $event['DTSTART']) > 8) {
+                    // Événement horaire : en cours à l'instant ; début/fin comptés en jours calendaires (0 = aujourd'hui)
+                    $datehol->setTimezone($datetoday->getTimezone());
+                    $datefin->setTimezone($datetoday->getTimezone());
+                    if ($now < $datehol) {
+                        $days = date_diff($datetoday, date_create($datehol->format('Y-m-d')))->days;
+                        if ($days < $diffday) {
+                            $diffday = $days;
+                            $nextlabel = $event['SUMMARY'];
+                        }
+                    }
+                    if ($now < $datefin) {
+                        $days = date_diff($datetoday, date_create($datefin->format('Y-m-d')))->days;
+                        if ($days < $diffend) {
+                            $diffend = $days;
+                        }
+                    }
+                    if ($datehol <= $now && $now < $datefin) {
+                        $eventn = '1';
+                        $label = $event['SUMMARY'];
+                    }
+                    continue;
+                }
                 if ($datetoday < $datehol) {
                     //calcul du début prochaines vacances
                     $diff = date_diff($datetoday, $datehol);
@@ -485,7 +727,6 @@ class dayinfo extends eqLogic {
                         $nextlabel = $event['SUMMARY'];
                     }
                 }
-                $datefin = date_create($event['DTEND']);
                 if ($datetoday < $datefin) {
                     //calcul de la fin des prochaines vacances
                     $diff = date_diff($datetoday, $datefin);

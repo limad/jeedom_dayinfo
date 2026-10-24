@@ -30,6 +30,28 @@
        private $_year;
        private $_date;
 
+       // Équinoxes et solstices 2024-2040 (UTC, à la minute ; Meeus ch. 27 recoupé avec les éphémérides officielles).
+       // L'algorithme ci-dessous, précis à quelques minutes seulement, sert de repli hors table.
+       private static $_official = array(
+        2024 => array(1 => '2024-03-20 03:07', 2 => '2024-06-20 20:51', 3 => '2024-09-22 12:44', 4 => '2024-12-21 09:20'),
+        2025 => array(1 => '2025-03-20 09:02', 2 => '2025-06-21 02:42', 3 => '2025-09-22 18:20', 4 => '2025-12-21 15:03'),
+        2026 => array(1 => '2026-03-20 14:46', 2 => '2026-06-21 08:25', 3 => '2026-09-23 00:06', 4 => '2026-12-21 20:50'),
+        2027 => array(1 => '2027-03-20 20:25', 2 => '2027-06-21 14:11', 3 => '2027-09-23 06:01', 4 => '2027-12-22 02:42'),
+        2028 => array(1 => '2028-03-20 02:17', 2 => '2028-06-20 20:02', 3 => '2028-09-22 11:45', 4 => '2028-12-21 08:20'),
+        2029 => array(1 => '2029-03-20 08:02', 2 => '2029-06-21 01:48', 3 => '2029-09-22 17:38', 4 => '2029-12-21 14:14'),
+        2030 => array(1 => '2030-03-20 13:52', 2 => '2030-06-21 07:31', 3 => '2030-09-22 23:27', 4 => '2030-12-21 20:10'),
+        2031 => array(1 => '2031-03-20 19:41', 2 => '2031-06-21 13:17', 3 => '2031-09-23 05:15', 4 => '2031-12-22 01:56'),
+        2032 => array(1 => '2032-03-20 01:22', 2 => '2032-06-20 19:09', 3 => '2032-09-22 11:11', 4 => '2032-12-21 07:56'),
+        2033 => array(1 => '2033-03-20 07:23', 2 => '2033-06-21 01:01', 3 => '2033-09-22 16:52', 4 => '2033-12-21 13:46'),
+        2034 => array(1 => '2034-03-20 13:18', 2 => '2034-06-21 06:44', 3 => '2034-09-22 22:40', 4 => '2034-12-21 19:34'),
+        2035 => array(1 => '2035-03-20 19:03', 2 => '2035-06-21 12:33', 3 => '2035-09-23 04:39', 4 => '2035-12-22 01:31'),
+        2036 => array(1 => '2036-03-20 01:03', 2 => '2036-06-20 18:32', 3 => '2036-09-22 10:24', 4 => '2036-12-21 07:13'),
+        2037 => array(1 => '2037-03-20 06:50', 2 => '2037-06-21 00:22', 3 => '2037-09-22 16:13', 4 => '2037-12-21 13:08'),
+        2038 => array(1 => '2038-03-20 12:41', 2 => '2038-06-21 06:10', 3 => '2038-09-22 22:03', 4 => '2038-12-21 19:02'),
+        2039 => array(1 => '2039-03-20 18:32', 2 => '2039-06-21 11:57', 3 => '2039-09-23 03:49', 4 => '2039-12-22 00:41'),
+        2040 => array(1 => '2040-03-20 00:12', 2 => '2040-06-20 17:47', 3 => '2040-09-22 09:45', 4 => '2040-12-21 06:33'),
+       );
+
        public function __construct($in = null) {
           if ($in == null) {
              $this->_year = date("Y");
@@ -85,6 +107,10 @@
        // (c) Copyright Institut de Mécanique Céleste - Bureau des longitudes - Observatoire de Paris
        // $phase is Equinoxes & Solstices: 1= March, 2= June, 3= September, 4= December
        public function getDate($phase) {
+          if (isset(self::$_official[(int) $this->_year][$phase])) {
+             $utc = date_create(self::$_official[(int) $this->_year][$phase] . ' UTC');
+             return date('Y-m-d', $utc->getTimestamp()); // date locale (fuseau de la box)
+          }
           $k = $this->_year - 2000 - 1;
           $dk = $k + 0.25 * (3 + $phase);
           $t = 0.21451814 + 0.99997862442 * $dk;
@@ -156,8 +182,8 @@
              $x = new Season(substr($this->_date,0,4)-1);
              $d = $x->getDate(4);  // getdate for phase 4 last year
           }
-          $d2 = strftime('%d-%m-%Y',strtotime($d));
-          $d1 = strftime('%d-%m-%Y',strtotime($this->_date));
+          $d2 = date('d-m-Y',strtotime($d));
+          $d1 = date('d-m-Y',strtotime($this->_date));
           $delta = round((strtotime($d2) - strtotime($d1))/86400);
           return -$delta;
           //echo $this->_date." to ".$d." = ".$delta;
@@ -170,8 +196,8 @@
              $x = new Season(substr($this->_date,0,4)+1);
              $d = $x->getDate(1);  // getdate for phase 1 next year
           }
-          $d2 = strftime('%d-%m-%Y',strtotime($d));
-          $d1 = strftime('%d-%m-%Y',strtotime($this->_date));
+          $d2 = date('d-m-Y',strtotime($d));
+          $d1 = date('d-m-Y',strtotime($this->_date));
           $delta = round((strtotime($d2) - strtotime($d1))/86400);
           return $delta;
           //echo $this->_date." to ".$d." = ".$delta;
